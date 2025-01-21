@@ -1,21 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QSqlDatabase>
-#include <QSqlQueryModel>
+#include <QSqlQuery>
 #include <QMessageBox>
 #include <QSqlError>
-#include <QSqlQuery>
-#include <QItemSelectionModel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , headerModel(new QSqlQueryModel(this))  // Инициализация модели для SQL-запросов Header_tbl
-    , dataModel(new QSqlQueryModel(this))    // Инициализация модели для SQL-запросов Data_tbl
+    , headerModel(new QSqlQueryModel(this))
+    , dataModel(new QSqlQueryModel(this))
 {
     ui->setupUi(this);
 
-    // Подключение к базе данных
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
     db.setHostName("localhost");
     db.setDatabaseName("testdb");
@@ -27,23 +24,18 @@ MainWindow::MainWindow(QWidget *parent)
         return;
     }
 
-    // Настройка модели для Header_tbl
     ui->tableViewHeaders->setModel(headerModel);
-    ui->tableViewHeaders->setEditTriggers(QAbstractItemView::NoEditTriggers);  // Отключаем редактирование
-    ui->tableViewHeaders->setSelectionBehavior(QAbstractItemView::SelectRows);  // Выделение строк
-    ui->tableViewHeaders->setSelectionMode(QAbstractItemView::SingleSelection);  // Выбор одной строки
+    ui->tableViewHeaders->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    // Настройка модели для Data_tbl
     ui->tableViewData->setModel(dataModel);
-    ui->tableViewData->setEditTriggers(QAbstractItemView::NoEditTriggers);  // Отключаем редактирование
-    ui->tableViewData->setSelectionBehavior(QAbstractItemView::SelectRows);  // Выделение строк
-    ui->tableViewData->setSelectionMode(QAbstractItemView::SingleSelection);  // Выбор одной строки
+    ui->tableViewData->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    // Подключаем кнопку загрузки данных
     connect(ui->btnLoadData, &QPushButton::clicked, this, &MainWindow::loadData);
-
-    // Подключаем кнопку для загрузки данных из Data_tbl для выбранного заголовка
     connect(ui->btnLoadDataForHeader, &QPushButton::clicked, this, &MainWindow::loadDataForSelectedHeader);
+    connect(ui->btnAddHeader, &QPushButton::clicked, this, &MainWindow::addHeader);
+    connect(ui->btnAddData, &QPushButton::clicked, this, &MainWindow::addData);
+    connect(ui->btnDeleteHeader, &QPushButton::clicked, this, &MainWindow::deleteHeader);
+    connect(ui->btnDeleteData, &QPushButton::clicked, this, &MainWindow::deleteData);
 }
 
 MainWindow::~MainWindow()
@@ -53,7 +45,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::loadData()
 {
-    // Загружаем все данные из Header_tbl при старте
     QSqlQuery query;
     query.prepare("SELECT id, name, description, dataCount FROM Header_tbl");
 
@@ -62,30 +53,20 @@ void MainWindow::loadData()
         return;
     }
 
-    // Передаем результат запроса в модель
     headerModel->setQuery(query);
-
-    // Устанавливаем заголовки столбцов
-    headerModel->setHeaderData(0, Qt::Horizontal, "ID");
-    headerModel->setHeaderData(1, Qt::Horizontal, "Name");
-    headerModel->setHeaderData(2, Qt::Horizontal, "Description");
-    headerModel->setHeaderData(3, Qt::Horizontal, "Data Count");
 }
 
 void MainWindow::loadDataForSelectedHeader()
 {
-    // Получаем индекс выбранной строки в tableViewHeaders
     QModelIndexList selectedIndexes = ui->tableViewHeaders->selectionModel()->selectedRows();
 
     if (selectedIndexes.isEmpty()) {
-        QMessageBox::warning(this, "Предупреждение", "Пожалуйста, выберите строку из Header_tbl.");
+        QMessageBox::warning(this, "Предупреждение", "Выберите строку из Header_tbl.");
         return;
     }
 
-    int selectedRow = selectedIndexes.first().row();
-    int headerId = headerModel->data(headerModel->index(selectedRow, 0)).toInt(); // Получаем ID выбранного заголовка
+    int headerId = headerModel->data(headerModel->index(selectedIndexes.first().row(), 0)).toInt();
 
-    // Теперь делаем запрос для получения данных из Data_tbl, связанных с этим заголовком
     QSqlQuery query;
     query.prepare("SELECT id, data FROM Data_tbl WHERE sv_header = :headerId");
     query.bindValue(":headerId", headerId);
@@ -95,10 +76,117 @@ void MainWindow::loadDataForSelectedHeader()
         return;
     }
 
-    // Передаем результат запроса в модель для Data_tbl
     dataModel->setQuery(query);
+}
 
-    // Устанавливаем заголовки столбцов для Data_tbl
-    dataModel->setHeaderData(0, Qt::Horizontal, "ID");
-    dataModel->setHeaderData(1, Qt::Horizontal, "Data");
+void MainWindow::addHeader()
+{
+    QString name = ui->lineEditHeaderName->text();
+    QString description = ui->lineEditHeaderDescription->text();
+
+    if (name.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Имя заголовка не может быть пустым.");
+        return;
+    }
+
+    QSqlQuery query;
+    query.prepare("INSERT INTO Header_tbl (name, description, dataCount) VALUES (:name, :description, 0)");
+    query.bindValue(":name", name);
+    query.bindValue(":description", description);
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Ошибка добавления", query.lastError().text());
+        return;
+    }
+
+    loadData();
+}
+
+void MainWindow::addData()
+{
+    QModelIndexList selectedIndexes = ui->tableViewHeaders->selectionModel()->selectedRows();
+
+    if (selectedIndexes.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Выберите строку из Header_tbl.");
+        return;
+    }
+
+    int headerId = headerModel->data(headerModel->index(selectedIndexes.first().row(), 0)).toInt();
+    QString data = ui->lineEditData->text();
+
+    if (data.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Данные не могут быть пустыми.");
+        return;
+    }
+
+    QSqlQuery query;
+    query.prepare("INSERT INTO Data_tbl (data, sv_header) VALUES (:data, :headerId)");
+    query.bindValue(":data", data);
+    query.bindValue(":headerId", headerId);
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Ошибка добавления", query.lastError().text());
+        return;
+    }
+
+    query.prepare("UPDATE Header_tbl SET dataCount = dataCount + 1 WHERE id = :headerId");
+    query.bindValue(":headerId", headerId);
+    query.exec();
+
+    loadDataForSelectedHeader();
+}
+
+void MainWindow::deleteHeader()
+{
+    QModelIndexList selectedIndexes = ui->tableViewHeaders->selectionModel()->selectedRows();
+
+    if (selectedIndexes.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Выберите строку из Header_tbl.");
+        return;
+    }
+
+    int headerId = headerModel->data(headerModel->index(selectedIndexes.first().row(), 0)).toInt();
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM Data_tbl WHERE sv_header = :headerId");
+    query.bindValue(":headerId", headerId);
+    query.exec();
+
+    query.prepare("DELETE FROM Header_tbl WHERE id = :headerId");
+    query.bindValue(":headerId", headerId);
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Ошибка удаления", query.lastError().text());
+        return;
+    }
+
+    loadData();
+}
+
+void MainWindow::deleteData()
+{
+    QModelIndexList selectedIndexes = ui->tableViewData->selectionModel()->selectedRows();
+
+    if (selectedIndexes.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Выберите строку из Data_tbl.");
+        return;
+    }
+
+    int dataId = dataModel->data(dataModel->index(selectedIndexes.first().row(), 0)).toInt();
+    int headerId = headerModel->data(headerModel->index(ui->tableViewHeaders->selectionModel()->selectedRows().first().row(), 0)).toInt();
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM Data_tbl WHERE id = :dataId");
+    query.bindValue(":dataId", dataId);
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Ошибка удаления", query.lastError().text());
+        return;
+    }
+
+    query.prepare("UPDATE Header_tbl SET dataCount = dataCount - 1 WHERE id = :headerId");
+    query.bindValue(":headerId", headerId);
+    query.exec();
+
+    loadDataForSelectedHeader();
 }
