@@ -41,7 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnDeleteHeader, &QPushButton::clicked, this, &MainWindow::deleteHeader);
     connect(ui->btnDeleteData, &QPushButton::clicked, this, &MainWindow::deleteData);
     connect(ui->btnExportToCSV, &QPushButton::clicked, this, &MainWindow::exportHeaderToCSV);
-
+    connect(ui->btnImportFromCSV, &QPushButton::clicked, this, &MainWindow::importHeaderFromCSV);
+    connect(ui->btnExportAllToCSV, &QPushButton::clicked, this, &MainWindow::exportAllToCSV);
 }
 
 MainWindow::~MainWindow()
@@ -249,3 +250,161 @@ void MainWindow::exportHeaderToCSV()
     file.close();
     QMessageBox::information(this, "Успех", "Данные успешно экспортированы.");
 }
+
+void MainWindow::importHeaderFromCSV()
+{
+    // Выбор файла для импорта
+    QString filePath = QFileDialog::getOpenFileName(this, "Открыть файл", "", "CSV Files (*.csv)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    // Открываем файл для чтения
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл для чтения.");
+        return;
+    }
+
+    QTextStream in(&file);
+    QSqlQuery query;
+    int importedHeaders = 0;
+    int importedData = 0;
+
+    QString headerName;
+    QString headerDescription;
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+
+        // Пропускаем пустые строки
+        if (line.isEmpty()) {
+            continue;
+        }
+
+        // Если строка содержит ";", это заголовок
+        if (line.contains(";")) {
+            QStringList headerParts = line.split(";");
+            if (headerParts.size() < 2) {
+                QMessageBox::warning(this, "Ошибка", "Строка заголовка должна содержать Name и Description, разделённые точкой с запятой.");
+                file.close();
+                return;
+            }
+
+            // Завершаем добавление данных для предыдущего заголовка, если он был
+            if (!headerName.isEmpty()) {
+                query.prepare("UPDATE Header_tbl SET dataCount = (SELECT COUNT(*) FROM Data_tbl WHERE sv_header = :headerId) WHERE id = :headerId");
+                query.bindValue(":headerId", importedHeaders);
+                query.exec();
+            }
+
+            // Обрабатываем новый заголовок
+            headerName = headerParts[0].trimmed();
+            headerDescription = headerParts[1].trimmed();
+
+            // Вставляем заголовок в базу данных
+            query.prepare("INSERT INTO Header_tbl (name, description, dataCount) VALUES (:name, :description, 0) RETURNING id");
+            query.bindValue(":name", headerName);
+            query.bindValue(":description", headerDescription);
+
+            if (!query.exec() || !query.next()) {
+                QMessageBox::critical(this, "Ошибка", "Не удалось добавить заголовок в базу данных:\n" + query.lastError().text());
+                file.close();
+                return;
+            }
+
+            importedHeaders = query.value(0).toInt(); // Получаем ID нового заголовка
+        }
+        // Если строка не содержит ";", это данные для текущего заголовка
+        else {
+            if (headerName.isEmpty()) {
+                QMessageBox::warning(this, "Ошибка", "Данные указаны без связанного заголовка.");
+                file.close();
+                return;
+            }
+
+            query.prepare("INSERT INTO Data_tbl (data, sv_header) VALUES (:data, :headerId)");
+            query.bindValue(":data", line);
+            query.bindValue(":headerId", importedHeaders);
+
+            if (!query.exec()) {
+                QMessageBox::critical(this, "Ошибка", "Не удалось добавить данные в базу данных:\n" + query.lastError().text());
+                file.close();
+                return;
+            }
+
+            importedData++;
+        }
+    }
+
+    // Обновляем данные для последнего заголовка
+    if (!headerName.isEmpty()) {
+        query.prepare("UPDATE Header_tbl SET dataCount = (SELECT COUNT(*) FROM Data_tbl WHERE sv_header = :headerId) WHERE id = :headerId");
+        query.bindValue(":headerId", importedHeaders);
+        query.exec();
+    }
+
+    file.close();
+    QMessageBox::information(this, "Успех", QString("Импортировано заголовков: %1\nИмпортировано данных: %2").arg(importedHeaders).arg(importedData));
+    loadData(); // Обновляем данные в интерфейсе
+}
+
+void MainWindow::exportAllToCSV()
+{
+    // Выбор файла для сохранения
+    QString filePath = QFileDialog::getSaveFileName(this, "Сохранить файл", "all_data.csv", "CSV Files (*.csv)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    // Открываем файл для записи
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл для записи.");
+        return;
+    }
+
+    QTextStream out(&file);
+
+    // Запрашиваем все заголовки из Header_tbl
+    QSqlQuery headerQuery;
+    headerQuery.prepare("SELECT id, name, description FROM Header_tbl");
+
+    if (!headerQuery.exec()) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось выполнить запрос к таблице Header_tbl:\n" + headerQuery.lastError().text());
+        file.close();
+        return;
+    }
+
+    // Перебираем заголовки
+    while (headerQuery.next()) {
+        int headerId = headerQuery.value("id").toInt();
+        QString headerName = headerQuery.value("name").toString();
+        QString headerDescription = headerQuery.value("description").toString();
+
+        // Записываем заголовок
+        out << headerName << ";" << headerDescription << ";\n";
+
+        // Запрашиваем связанные данные из Data_tbl
+        QSqlQuery dataQuery;
+        dataQuery.prepare("SELECT data FROM Data_tbl WHERE sv_header = :headerId");
+        dataQuery.bindValue(":headerId", headerId);
+
+        if (!dataQuery.exec()) {
+            QMessageBox::critical(this, "Ошибка", "Не удалось выполнить запрос к таблице Data_tbl:\n" + dataQuery.lastError().text());
+            file.close();
+            return;
+        }
+
+        // Записываем связанные данные
+        while (dataQuery.next()) {
+            QString dataValue = dataQuery.value("data").toString();
+            out << dataValue << "\n";
+        }
+    }
+
+    file.close();
+    QMessageBox::information(this, "Успех", "Все данные успешно экспортированы в файл.");
+}
+
+

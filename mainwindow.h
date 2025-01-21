@@ -23,7 +23,9 @@ private slots:
     void addData();
     void deleteHeader();
     void deleteData();
-    void exportHeaderToCSV(); // Новый слот для экспорта
+    void exportHeaderToCSV();
+    void importHeaderFromCSV();
+    void exportAllToCSV(); // Новый слот для экспорта всех данных
 
 private:
     Ui::MainWindow *ui;
