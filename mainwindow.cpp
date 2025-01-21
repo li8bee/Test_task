@@ -5,6 +5,10 @@
 #include <QMessageBox>
 #include <QSqlError>
 
+#include <QFileDialog>
+#include <QFile>
+#include <QTextStream>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -36,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnAddData, &QPushButton::clicked, this, &MainWindow::addData);
     connect(ui->btnDeleteHeader, &QPushButton::clicked, this, &MainWindow::deleteHeader);
     connect(ui->btnDeleteData, &QPushButton::clicked, this, &MainWindow::deleteData);
+    connect(ui->btnExportToCSV, &QPushButton::clicked, this, &MainWindow::exportHeaderToCSV);
+
 }
 
 MainWindow::~MainWindow()
@@ -189,4 +195,57 @@ void MainWindow::deleteData()
     query.exec();
 
     loadDataForSelectedHeader();
+}
+
+void MainWindow::exportHeaderToCSV()
+{
+    // Проверяем, выбран ли заголовок
+    QModelIndexList selectedIndexes = ui->tableViewHeaders->selectionModel()->selectedRows();
+    if (selectedIndexes.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Выберите заголовок для экспорта.");
+        return;
+    }
+
+    // Получаем данные выбранного заголовка
+    int selectedRow = selectedIndexes.first().row();
+    int headerId = headerModel->data(headerModel->index(selectedRow, 0)).toInt();
+    QString headerName = headerModel->data(headerModel->index(selectedRow, 1)).toString();
+    QString headerDescription = headerModel->data(headerModel->index(selectedRow, 2)).toString();
+
+    // Выбор файла для сохранения
+    QString filePath = QFileDialog::getSaveFileName(this, "Сохранить файл", headerName + ".csv", "CSV Files (*.csv)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    // Открываем файл для записи
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл для записи.");
+        return;
+    }
+
+    QTextStream out(&file);
+
+    // Записываем данные заголовка
+    out << headerName << ";" << headerDescription << "\n";
+
+    // Получаем данные, связанные с этим заголовком, из Data_tbl
+    QSqlQuery query;
+    query.prepare("SELECT data FROM Data_tbl WHERE sv_header = :headerId");
+    query.bindValue(":headerId", headerId);
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось выполнить запрос к базе данных.");
+        file.close();
+        return;
+    }
+
+    // Записываем данные в файл
+    while (query.next()) {
+        out << query.value(0).toString() << "\n";
+    }
+
+    file.close();
+    QMessageBox::information(this, "Успех", "Данные успешно экспортированы.");
 }

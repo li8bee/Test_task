@@ -23,6 +23,7 @@ private slots:
     void addData();
     void deleteHeader();
     void deleteData();
+    void exportHeaderToCSV(); // Новый слот для экспорта
 
 private:
     Ui::MainWindow *ui;
