@@ -2,9 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSqlTableModel>
-#include <QSqlDatabase>
-#include <QTableView>
+#include <QSqlQueryModel>  // Для работы с произвольными SQL-запросами
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -18,11 +16,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void loadData();           // Слот для обработки кнопки загрузки данных
+    void loadDataForSelectedHeader();  // Слот для загрузки данных из Data_tbl для выбранного заголовка
+
 private:
     Ui::MainWindow *ui;
-
-    QSqlDatabase db;           // Подключение к базе данных
-    QSqlTableModel *model;     // Модель для отображения данных
+    QSqlQueryModel *headerModel; // Модель для отображения данных из Header_tbl
+    QSqlQueryModel *dataModel;   // Модель для отображения данных из Data_tbl
 };
 
 #endif // MAINWINDOW_H
