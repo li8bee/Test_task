@@ -50,6 +50,12 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/************************************************************
+ *                                                          *
+ *             Отображение таблицы                          *
+ *                                                          *
+ ************************************************************/
+
 void MainWindow::loadData()
 {
     QSqlQuery query;
@@ -85,6 +91,12 @@ void MainWindow::loadDataForSelectedHeader()
 
     dataModel->setQuery(query);
 }
+
+/************************************************************
+ *                                                          *
+ *             Добавление строк Header / Data               *
+ *                                                          *
+ ************************************************************/
 
 void MainWindow::addHeader()
 {
@@ -143,6 +155,13 @@ void MainWindow::addData()
     loadDataForSelectedHeader();
 }
 
+/************************************************************
+ *                                                          *
+ *             Удаление строк Header / Data                 *
+ *                                                          *
+ ************************************************************/
+
+
 void MainWindow::deleteHeader()
 {
     QModelIndexList selectedIndexes = ui->tableViewHeaders->selectionModel()->selectedRows();
@@ -197,6 +216,14 @@ void MainWindow::deleteData()
 
     loadDataForSelectedHeader();
 }
+
+
+
+/************************************************************
+ *                                                          *
+ *             Импорт / Экспорт данных в .CSV               *
+ *                                                          *
+ ************************************************************/
 
 void MainWindow::exportHeaderToCSV()
 {

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSqlQueryModel>
+#include <QProgressBar> // подключаем прогресс-бар
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -31,6 +32,7 @@ private:
     Ui::MainWindow *ui;
     QSqlQueryModel *headerModel;
     QSqlQueryModel *dataModel;
+    QProgressBar *progressBar;  // Добавляем указатель на прогресс-бар
 };
 
 #endif // MAINWINDOW_H

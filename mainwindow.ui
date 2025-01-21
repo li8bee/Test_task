@@ -24,102 +24,116 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="0">
-      <widget class="QPushButton" name="btnDeleteHeader">
-       <property name="text">
-        <string>btnDeleteHeader</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QPushButton" name="btnDeleteData">
-       <property name="text">
-        <string>btnDeleteData</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Поле ввода столбца &quot;Description&quot; таблицы Header</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QPushButton" name="btnLoadData">
-       <property name="text">
-        <string>btnLoadData</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="btnLoadDataForHeader">
-       <property name="text">
-        <string>btnLoadDataForHeader</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="0">
+     <item row="10" column="0">
       <widget class="QLineEdit" name="lineEditData"/>
      </item>
-     <item row="5" column="1">
-      <widget class="QLineEdit" name="lineEditHeaderDescription"/>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_3">
+     <item row="4" column="0">
+      <widget class="QPushButton" name="btnDeleteHeader">
        <property name="text">
-        <string>Поле ввода столбца &quot;Data&quot; таблицы Data</string>
+        <string>Удалить выделенную строку из Headers</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="QTableView" name="tableViewData"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QPushButton" name="btnAddData">
+     <item row="2" column="0">
+      <widget class="QPushButton" name="btnLoadData">
        <property name="text">
-        <string>btnAddData</string>
+        <string>Загрузка Headers</string>
        </property>
       </widget>
      </item>
      <item row="5" column="0">
-      <widget class="QLineEdit" name="lineEditHeaderName"/>
-     </item>
-     <item row="2" column="0">
-      <widget class="QPushButton" name="btnAddHeader">
-       <property name="text">
-        <string>btnAddHeader</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Поле ввода столбца &quot;Name&quot; таблицы Header</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="QTableView" name="tableViewHeaders"/>
-     </item>
-     <item row="10" column="0">
-      <widget class="QPushButton" name="btnImportFromCSV">
+     <item row="5" column="1">
+      <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>btnImportFromCSV</string>
+        <string>Поле ввода столбца &quot;Description&quot; таблицы Header</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
-      <widget class="QPushButton" name="btnExportToCSV">
+     <item row="1" column="1">
+      <widget class="QTableView" name="tableViewData"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QPushButton" name="btnLoadDataForHeader">
        <property name="text">
-        <string>btnExportToCSV</string>
+        <string>Загрузка Data</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0">
+      <widget class="QPushButton" name="btnImportFromCSV">
+       <property name="text">
+        <string>Импортировать CSV файл</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QPushButton" name="btnAddHeader">
+       <property name="text">
+        <string>Добавить строку в Headers</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Поле ввода столбца &quot;Data&quot; таблицы Data</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="lineEditHeaderDescription"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QTableView" name="tableViewHeaders"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLineEdit" name="lineEditHeaderName"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="QPushButton" name="btnDeleteData">
+       <property name="text">
+        <string>Удалить выделенную строку из Data</string>
        </property>
       </widget>
      </item>
      <item row="11" column="1">
+      <widget class="QPushButton" name="btnExportToCSV">
+       <property name="text">
+        <string>Экспортировать выделенный заголовок</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="btnAddData">
+       <property name="text">
+        <string>Добавить строку в Data</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="1">
       <widget class="QPushButton" name="btnExportAllToCSV">
        <property name="text">
-        <string>btnExportAllToCSV</string>
+        <string>Экспортировать все заголовки</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Таблица Headers</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Таблица Data</string>
        </property>
       </widget>
      </item>
